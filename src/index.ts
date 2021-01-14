@@ -4,9 +4,11 @@ class Tableau {
   tb: any | Array<string>;
   compteur = 0;
   compteur_line: any | Array<string>;
+  vertical_line: Array<string> | any;
 
   initialise() {
     this.tb = [[], [], [], [], [], []];
+    this.vertical_line = [[], [], [], [], [], []];
     this.compteur_line = [0, 0, 0, 0, 0, 0];
     const array = [
       '********* ',
@@ -22,9 +24,11 @@ class Tableau {
         if (array[i].substr(f, 1) === '|') {
           this.compteur = this.compteur + 1;
           this.compteur_line[i] = this.compteur_line[i] + 1;
+          this.vertical_line[i].push(f);
         }
       }
     }
+    console.log(this.vertical_line);
   }
 
   show() {
@@ -77,20 +81,24 @@ class Tableau {
     let matches = 0;
 
     if (type_reponse === 'line') {
-      line = readlineSync.question('Line : ');
       if (type_user === 'IA' && reponse_question != 'null') {
-        console.log(reponse_question);
+        line = readlineSync.question('Line : ');
+        console.log(reponse_question[0]);
+      } else if (type_user === 'Player') {
+        line = readlineSync.question('Line : ');
       }
     } else if (type_reponse === 'matches') {
-      matches = readlineSync.question('Matches : ');
       if (type_user === 'IA' && reponse_question != 'null1') {
-        console.log(reponse_question);
+        matches = readlineSync.question('Matches : ');
+        console.log(reponse_question[0]);
+      } else if (type_user === 'Player') {
+        matches = readlineSync.question('Matches : ');
       }
     }
     let error = '';
     if (type_reponse === 'line') {
       if (type_user === 'IA') {
-        error = this.error_line(reponse_question);
+        error = this.error_line(reponse_question[0]);
         reponse = error;
       } else {
         error = this.error_line(line);
@@ -140,16 +148,17 @@ class Tableau {
       }
     }
     if (reponse_1 === 'not error' && reponse_2 === 'not error') {
-      for (let i = 0; i < resultat_2[1]; i++) {
-        for (let f = 0; f < this.tb[resultat_1[1] - 1].length; f++) {
-          if (this.tb[resultat_1[1] - 1][f] === '|') {
-            this.tb[resultat_1[1] - 1][f] = '';
-            this.compteur = this.compteur - 1;
-          }
-        }
+      for (let f = 0; f < resultat_2[1]; f++) {
+        this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]] =
+          ' ';
+        this.vertical_line[resultat_1[1] - 1].splice(0, 1);
+        this.compteur_line[resultat_1[1] - 1] =
+          this.compteur_line[resultat_1[1] - 1] - 1;
+        this.compteur = this.compteur - 1;
       }
+      console.log(this.compteur);
     }
-    if (this.compteur >= 0) {
+    if (this.compteur > 0) {
       console.log(
         `Player removed ${reponse_matches} match(es) from line ${resultat_1[0]}`,
       );
@@ -161,10 +170,10 @@ class Tableau {
 
   launch_game() {
     this.start();
-    const random = Math.floor(Math.random() * Math.floor(10))
-    while (this.compteur >= 0) {
+    const random = Math.floor(Math.random() * Math.floor(10));
+    while (this.compteur > 0) {
       this.game('Player', 'null', 'null');
-      this.game('IA', random, random);
+      //this.game('IA', random, random);
     }
   }
 }
