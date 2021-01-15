@@ -47,13 +47,14 @@ class Tableau {
   start() {
     this.initialise();
     this.show();
+    console.log("\r")
   }
 
   error_line(line: number) {
     let message = 'not error';
     if (line > this.tb.length) {
       message = 'Error: this line is out of range';
-    } else if (line < 0 || typeof line != 'string') {
+    } else if (line < 0) {
       message = 'Error: invalid input (positive number expected)';
     }
     return message;
@@ -63,7 +64,7 @@ class Tableau {
     let message = 'not error';
     if (matches === 0 && matches !== undefined) {
       message = 'Error: you have to remove at least one match';
-    } else if (matches < 0 || typeof matches != 'string') {
+    } else if (matches < 0) {
       message = 'Error: invalid input (positive number expected)';
     } else if (matches > this.compteur_line[line - 1]) {
       message = 'Error: not enough matches on this line';
@@ -123,6 +124,7 @@ class Tableau {
     reponse_line: number | string,
     reponse_matches: number | string,
   ) {
+    console.log("\r")
     console.log(`${type_user} turn :`);
     let resultat_1: [string, number] | number | any;
     let resultat_2: [string, number] | number | any;
@@ -160,6 +162,7 @@ class Tableau {
       console.log(
         `Player removed ${this.res[0][1]} match(es) from line ${this.res[1][1]}`,
       );
+      console.log("\r")
       this.show();
     } else {
       console.log('You lost, too bad..');
@@ -184,8 +187,7 @@ class Tableau {
     }
   }
 
-  start_final()
-  {
+  start_final() {
     this.start();
     const random = Math.floor(Math.random() * Math.floor(10));
     while (this.compteur > 0) {
