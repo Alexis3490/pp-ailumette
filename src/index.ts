@@ -57,6 +57,7 @@ class Tableau {
     } else if (line < 0) {
       message = 'Error: invalid input (positive number expected)';
     }
+    console.log(line)
     return message;
   }
 
@@ -69,6 +70,8 @@ class Tableau {
     } else if (matches > this.compteur_line[line - 1]) {
       message = 'Error: not enough matches on this line';
     }
+    console.log(matches)
+
     return message;
   }
 
@@ -190,7 +193,7 @@ class Tableau {
 
   start_final() {
     this.start();
-    const random = Math.floor(Math.random() * Math.floor(10));
+    const random = Math.floor(Math.random() * Math.floor(5))+1;
     while (this.compteur > 0) {
       this.start_on_play('Player', 'null', 'null');
       this.start_on_play('IA', random, random);
