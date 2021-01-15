@@ -7,7 +7,7 @@
     "dev": "nodemon",
     "clean": "yarn rimraf .build",
     "build": "yarn babel src/ --out-dir .build --extensions '.ts' --quiet",
-    "start": "yarn build && node .build/server",
+    "start": "yarn build && node .build/index",
     "lint": "eslint . --ext .ts",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "prettier-watch": "onchange 'src/**/*.ts' -- prettier --write {{changed}}"
