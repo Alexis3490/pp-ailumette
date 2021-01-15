@@ -5,12 +5,16 @@ class Tableau {
   compteur: number | any;
   compteur_line: any | Array<string>;
   vertical_line: Array<string> | any;
+  line: number | any;
+  matches: number | any;
 
   initialise() {
     this.tb = [[], [], [], [], [], []];
     this.vertical_line = [[], [], [], [], [], []];
     this.compteur_line = [0, 0, 0, 0, 0, 0];
     this.compteur = 0;
+    this.line = 0;
+    this.matches = 0;
     const array = [
       '********* ',
       ' *   |   *',
@@ -50,10 +54,12 @@ class Tableau {
 
   error_line(line: number) {
     let message = 'not error';
-    if (line > this.tb.length) {
+    if (line > 6) {
       message = 'Error: this line is out of range';
-    } else if (line < 0 || typeof line != 'number') {
+    } else if (line < 0) {
       message = 'Error: invalid input (positive number expected)';
+    } else if (isNaN(line)) {
+      message = 'Error: invalid input number';
     }
     return message;
   }
@@ -62,44 +68,20 @@ class Tableau {
     let message = 'not error';
     if (matches === 0 && matches !== undefined) {
       message = 'Error: you have to remove at least one match';
-    } else if (matches < 0 || typeof matches != 'number') {
+    } else if (matches < 0) {
       message = 'Error: invalid input (positive number expected)';
     } else if (matches > this.compteur_line[line - 1]) {
       message = 'Error: not enough matches on this line';
+    } else if (isNaN(matches)) {
+      message = 'Error: invalid input number';
     }
     return message;
-  }
-
-  question(type_user: string, type_reponse: string, reponse_question: number) {
-    let line = 0;
-    let matches = 0;
-    if (type_reponse === 'line') {
-      if (type_user === 'Player') {
-        line = readlineSync.question('Line : ');
-        line = parseInt(String(line));
-      }
-    } else if (type_reponse === 'matches') {
-      if (type_user === 'Player') {
-        matches = readlineSync.question('Matches : ');
-        matches = parseInt(String(matches));
-      }
-    }
-    const result_error = this.launch_error(
-      type_user,
-      type_reponse,
-      reponse_question,
-      line,
-      matches,
-    );
-    return [result_error, line, matches];
   }
 
   launch_error(
     type_user: string,
     type_reponse: string,
     reponse_question: number | any,
-    line: number,
-    matches: number,
   ) {
     let reponse = '';
     let error = '';
@@ -108,8 +90,8 @@ class Tableau {
         error = this.error_line(reponse_question[0]);
         reponse = error;
       } else if (type_user === 'Player') {
-        if (line != null) {
-          error = this.error_line(line);
+        if (this.line != null) {
+          error = this.error_line(this.line);
         }
         reponse = error;
       }
@@ -118,11 +100,9 @@ class Tableau {
         error = this.error_global(reponse_question[0], reponse_question[1]);
         reponse = error;
       } else if (type_user === 'Player') {
-        console.log(line);
-        console.log(matches);
-        if (line != null) {
-          if (matches != null) {
-            error = this.error_global(line, matches);
+        if (this.line != null) {
+          if (this.matches != null) {
+            error = this.error_global(this.line, this.matches);
           }
         }
         reponse = error;
@@ -131,25 +111,28 @@ class Tableau {
     return reponse;
   }
 
-  verify_error(
+  question(
     type_user: string,
     type_reponse: string,
     reponse_question: number | any,
   ) {
-    const result = this.question(type_user, type_reponse, reponse_question);
-    const regex_global = RegExp('Error*');
-    if (regex_global.test(String(result[0]))) {
-      console.log(String(result[0]));
+    if (type_reponse === 'line') {
+      if (type_user === 'Player') {
+        this.line = readlineSync.question('Line : ');
+        this.line = parseInt(String(this.line));
+      }
+    } else if (type_reponse === 'matches') {
+      if (type_user === 'Player') {
+        this.matches = readlineSync.question('Matches : ');
+        this.matches = parseInt(String(this.matches));
+      }
     }
-    if (type_reponse === 'line' && type_user === 'Player') {
-      return [String(result[0]), result[1]];
-    } else if (type_reponse === 'line' && type_user === 'IA') {
-      return [String(result[0]), reponse_question[0]];
-    } else if (type_reponse === 'matches' && type_user === 'Player') {
-      return [String(result[0]), result[2]];
-    } else if (type_reponse === 'matches' && type_user === 'IA') {
-      return [String(result[0]), reponse_question[1]];
-    }
+    const result_error = this.launch_error(
+      type_user,
+      type_reponse,
+      reponse_question,
+    );
+    return [result_error, this.line, this.matches];
   }
 
   game(
@@ -164,28 +147,48 @@ class Tableau {
     let resultat_1: [string, number] | number | any;
     let resultat_2: [string, number] | number | any;
     while (reponse_1 !== 'not error') {
-      resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
+      resultat_1 = this.question(type_user, 'line', [reponse_matches]);
       reponse_1 = resultat_1[0];
+      if (resultat_1[0] !== 'not error') {
+        console.log(resultat_1[0]);
+        resultat_1 = this.question(type_user, 'line', [reponse_matches]);
+        reponse_1 = resultat_1[0];
+      }
     }
     if (reponse_1 === 'not error') {
-      resultat_2 = this.verify_error(type_user, 'matches', [
+      resultat_2 = this.question(type_user, 'matches', [
         resultat_1[1],
         reponse_matches,
       ]);
       reponse_2 = resultat_2[0];
       while (reponse_2 !== 'not error') {
-        resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
+        resultat_1 = this.question(type_user, 'line', [reponse_matches]);
         reponse_1 = resultat_1[0];
+        if (resultat_1[0] !== 'not error') {
+          console.log(resultat_1[0]);
+          resultat_1 = this.question(type_user, 'line', [reponse_matches]);
+          reponse_1 = resultat_1[0];
+        }
 
-        resultat_2 = this.verify_error(type_user, 'matches', [
+        resultat_2 = this.question(type_user, 'matches', [
           resultat_1[1],
           reponse_matches,
         ]);
         reponse_2 = resultat_2[0];
+        if (resultat_2[0] !== 'not error') {
+          console.log(resultat_2[0]);
+          resultat_2 = this.question(type_user, 'matches', [
+            resultat_1[1],
+            reponse_matches,
+          ]);
+        }
       }
     }
-     if (reponse_1 === 'not error' && reponse_2 === 'not error') {
-      for (let f = 0; f < resultat_2[1]; f++) {
+    console.log(this.vertical_line);
+
+    if (reponse_1 === 'not error' && reponse_2 === 'not error') {
+      for (let f = 0; f < resultat_2[2]; f++) {
+        console.log(this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]]);
         this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]] =
           ' ';
         this.vertical_line[resultat_1[1] - 1].splice(0, 1);
@@ -198,7 +201,7 @@ class Tableau {
     }
     if (this.compteur > 0) {
       console.log(
-        `Player removed ${resultat_2[1]} match(es) from line ${resultat_1[1]}`,
+        `Player removed ${resultat_2[2]} match(es) from line ${resultat_1[1]}`,
       );
       console.log('\r');
       this.show();

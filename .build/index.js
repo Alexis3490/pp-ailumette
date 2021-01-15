@@ -20,6 +20,8 @@ var Tableau = /*#__PURE__*/function () {
       this.vertical_line = [[], [], [], [], [], []];
       this.compteur_line = [0, 0, 0, 0, 0, 0];
       this.compteur = 0;
+      this.line = 0;
+      this.matches = 0;
       var array = ['********* ', ' *   |   *', ' *  |||  *', ' * ||||| *', ' *|||||||*', ' *********'];
 
       for (var i = 0; i < array.length; i++) {
@@ -53,16 +55,19 @@ var Tableau = /*#__PURE__*/function () {
     value: function start() {
       this.initialise();
       this.show();
+      console.log('\r');
     }
   }, {
     key: "error_line",
     value: function error_line(line) {
       var message = 'not error';
 
-      if (line > this.tb.length) {
+      if (line > 6) {
         message = 'Error: this line is out of range';
-      } else if (line < 0 || typeof line != 'number') {
+      } else if (line < 0) {
         message = 'Error: invalid input (positive number expected)';
+      } else if (isNaN(line)) {
+        message = 'Error: invalid input number';
       }
 
       return message;
@@ -74,35 +79,20 @@ var Tableau = /*#__PURE__*/function () {
 
       if (matches === 0 && matches !== undefined) {
         message = 'Error: you have to remove at least one match';
-      } else if (matches < 0 || typeof matches != 'number') {
+      } else if (matches < 0) {
         message = 'Error: invalid input (positive number expected)';
+      } else if (matches > this.compteur_line[line - 1]) {
+        message = 'Error: not enough matches on this line';
+      } else if (isNaN(matches)) {
+        message = 'Error: invalid input number';
       }
-      /*else if (matches > this.compteur_line[line - 1]) {
-      message = 'Error: not enough matches on this line';
-      }*/
-
 
       return message;
     }
   }, {
-    key: "verify_error",
-    value: function verify_error(type_user, type_reponse, reponse_question) {
+    key: "launch_error",
+    value: function launch_error(type_user, type_reponse, reponse_question) {
       var reponse = '';
-      var line = 0;
-      var matches = 0;
-
-      if (type_reponse === 'line') {
-        if (type_user === 'Player') {
-          line = readlineSync.question('Line : ');
-          line = parseInt(String(line));
-        }
-      } else if (type_reponse === 'matches') {
-        if (type_user === 'Player') {
-          matches = readlineSync.question('Matches : ');
-          matches = parseInt(String(matches));
-        }
-      }
-
       var error = '';
 
       if (type_reponse === 'line') {
@@ -110,7 +100,10 @@ var Tableau = /*#__PURE__*/function () {
           error = this.error_line(reponse_question[0]);
           reponse = error;
         } else if (type_user === 'Player') {
-          error = this.error_line(line);
+          if (this.line != null) {
+            error = this.error_line(this.line);
+          }
+
           reponse = error;
         }
       } else if (type_reponse === 'matches') {
@@ -118,33 +111,40 @@ var Tableau = /*#__PURE__*/function () {
           error = this.error_global(reponse_question[0], reponse_question[1]);
           reponse = error;
         } else if (type_user === 'Player') {
-          console.log(matches);
-          console.log(reponse_question[0]);
-          console.log(this.compteur_line);
-          error = this.error_global(reponse_question[0], matches);
+          if (this.line != null) {
+            if (this.matches != null) {
+              error = this.error_global(this.line, this.matches);
+            }
+          }
+
           reponse = error;
         }
       }
 
-      var regex_global = RegExp('Error*');
-
-      if (regex_global.test(reponse)) {
-        console.log(reponse);
+      return reponse;
+    }
+  }, {
+    key: "question",
+    value: function question(type_user, type_reponse, reponse_question) {
+      if (type_reponse === 'line') {
+        if (type_user === 'Player') {
+          this.line = readlineSync.question('Line : ');
+          this.line = parseInt(String(this.line));
+        }
+      } else if (type_reponse === 'matches') {
+        if (type_user === 'Player') {
+          this.matches = readlineSync.question('Matches : ');
+          this.matches = parseInt(String(this.matches));
+        }
       }
 
-      if (type_reponse === 'line' && type_user === 'Player') {
-        return [reponse, line];
-      } else if (type_reponse === 'line' && type_user === 'IA') {
-        return [reponse, reponse_question[0]];
-      } else if (type_reponse === 'matches' && type_user === 'Player') {
-        return [reponse, matches];
-      } else if (type_reponse === 'matches' && type_user === 'IA') {
-        return [reponse, reponse_question[1]];
-      }
+      var result_error = this.launch_error(type_user, type_reponse, reponse_question);
+      return [result_error, this.line, this.matches];
     }
   }, {
     key: "game",
     value: function game(type_user, reponse_line, reponse_matches) {
+      console.log('\r');
       console.log("".concat(type_user, " turn :"));
       var reponse_1 = '';
       var reponse_2 = '';
@@ -152,24 +152,45 @@ var Tableau = /*#__PURE__*/function () {
       var resultat_2;
 
       while (reponse_1 !== 'not error') {
-        resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
+        resultat_1 = this.question(type_user, 'line', [reponse_matches]);
         reponse_1 = resultat_1[0];
-      }
 
-      if (reponse_1 === 'not error') {
-        resultat_2 = this.verify_error(type_user, 'matches', [resultat_1[1], reponse_matches]);
-        reponse_2 = resultat_2[0];
-
-        while (reponse_2 !== 'not error') {
-          resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
+        if (resultat_1[0] !== 'not error') {
+          console.log(resultat_1[0]);
+          resultat_1 = this.question(type_user, 'line', [reponse_matches]);
           reponse_1 = resultat_1[0];
-          resultat_2 = this.verify_error(type_user, 'matches', [resultat_1[1], reponse_matches]);
-          reponse_2 = resultat_2[0];
         }
       }
 
+      if (reponse_1 === 'not error') {
+        resultat_2 = this.question(type_user, 'matches', [resultat_1[1], reponse_matches]);
+        reponse_2 = resultat_2[0];
+
+        while (reponse_2 !== 'not error') {
+          resultat_1 = this.question(type_user, 'line', [reponse_matches]);
+          reponse_1 = resultat_1[0];
+
+          if (resultat_1[0] !== 'not error') {
+            console.log(resultat_1[0]);
+            resultat_1 = this.question(type_user, 'line', [reponse_matches]);
+            reponse_1 = resultat_1[0];
+          }
+
+          resultat_2 = this.question(type_user, 'matches', [resultat_1[1], reponse_matches]);
+          reponse_2 = resultat_2[0];
+
+          if (resultat_2[0] !== 'not error') {
+            console.log(resultat_2[0]);
+            resultat_2 = this.question(type_user, 'matches', [resultat_1[1], reponse_matches]);
+          }
+        }
+      }
+
+      console.log(this.vertical_line);
+
       if (reponse_1 === 'not error' && reponse_2 === 'not error') {
-        for (var f = 0; f < resultat_2[1]; f++) {
+        for (var f = 0; f < resultat_2[2]; f++) {
+          console.log(this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]]);
           this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]] = ' ';
           this.vertical_line[resultat_1[1] - 1].splice(0, 1);
 
@@ -182,7 +203,8 @@ var Tableau = /*#__PURE__*/function () {
       }
 
       if (this.compteur > 0) {
-        console.log("Player removed ".concat(resultat_2[1], " match(es) from line ").concat(resultat_1[1]));
+        console.log("Player removed ".concat(resultat_2[2], " match(es) from line ").concat(resultat_1[1]));
+        console.log('\r');
         this.show();
       } else {
         console.log('You lost, too bad..');
