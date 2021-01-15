@@ -1,5 +1,4 @@
 # pp-ailumette
 
 # Launch Projet
-
-yarn start
+yarn install && yarn start
