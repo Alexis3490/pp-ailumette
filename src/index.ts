@@ -2,15 +2,17 @@ const readlineSync = require('readline-sync');
 
 class Tableau {
   tb: any | Array<string>;
-  compteur: number| any;
+  compteur: number | any;
   compteur_line: any | Array<string>;
   vertical_line: Array<string> | any;
+  res: Array<string> | any;
 
   initialise() {
     this.tb = [[], [], [], [], [], []];
     this.vertical_line = [[], [], [], [], [], []];
     this.compteur_line = [0, 0, 0, 0, 0, 0];
     this.compteur = 0;
+    this.res = [];
     const array = [
       '********* ',
       ' *   |   *',
@@ -29,7 +31,6 @@ class Tableau {
         }
       }
     }
-    console.log(this.vertical_line);
   }
 
   show() {
@@ -54,8 +55,6 @@ class Tableau {
       message = 'Error: this line is out of range';
     } else if (line < 0 || typeof line != 'string') {
       message = 'Error: invalid input (positive number expected)';
-    } else if (this.compteur_line[line - 1] === 0) {
-      message = 'Error: not element in the line';
     }
     return message;
   }
@@ -95,7 +94,7 @@ class Tableau {
       if (type_user === 'IA') {
         error = this.error_line(reponse_question[0]);
         reponse = error;
-      } else {
+      } else if (type_user === 'Player') {
         error = this.error_line(line);
         reponse = error;
       }
@@ -103,14 +102,14 @@ class Tableau {
       if (type_user === 'IA') {
         error = this.error_global(reponse_question[0], reponse_question[1]);
         reponse = error;
-      } else {
+      } else if (type_user === 'Player') {
         error = this.error_global(reponse_question[0], matches);
         reponse = error;
       }
     }
     const regex_global = RegExp('Error*');
     if (regex_global.test(reponse)) {
-      console.log(reponse);
+      //console.log(reponse);
     }
     if (type_reponse === 'line') {
       return [reponse, line];
@@ -125,37 +124,41 @@ class Tableau {
     reponse_matches: number | string,
   ) {
     console.log(`${type_user} turn :`);
-    let reponse_1 = '';
-    let reponse_2 = '';
     let resultat_1: [string, number] | number | any;
     let resultat_2: [string, number] | number | any;
-    while (reponse_1 !== 'not error') {
-      resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
-      reponse_1 = resultat_1[0];
-    }
-    if (reponse_1 === 'not error') {
-      while (reponse_2 !== 'not error') {
-        resultat_2 = this.verify_error(type_user, 'matches', [
-          resultat_1[1],
-          reponse_matches,
-        ]);
-        reponse_2 = resultat_2[0];
+
+    resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
+    if (resultat_1[0] !== 'not error') {
+      console.log(resultat_1[0]);
+      return [resultat_1];
+    } else {
+      resultat_2 = this.verify_error(type_user, 'matches', [
+        resultat_1[1],
+        reponse_matches,
+      ]);
+      if (resultat_2[0] !== 'not error') {
+        console.log(resultat_2[0]);
+      } else {
+        this.res = [resultat_1, resultat_2];
+        return [resultat_1, resultat_2];
       }
     }
-    if (reponse_1 === 'not error' && reponse_2 === 'not error') {
-      for (let f = 0; f < resultat_2[1]; f++) {
-        this.tb[resultat_1[1] - 1][this.vertical_line[resultat_1[1] - 1][0]] =
+  }
+
+  score() {
+    if (this.res[0][0] === 'not error' && this.res[1][0] === 'not error') {
+      for (let f = 0; f < this.res[1][1]; f++) {
+        this.tb[this.res[0][1] - 1][this.vertical_line[this.res[0][1] - 1][0]] =
           ' ';
-        this.vertical_line[resultat_1[1] - 1].splice(0, 1);
-        this.compteur_line[resultat_1[1] - 1] =
-          this.compteur_line[resultat_1[1] - 1] - 1;
+        this.vertical_line[this.res[0][1] - 1].splice(0, 1);
+        this.compteur_line[this.res[0][1] - 1] =
+          this.compteur_line[this.res[0][1] - 1] - 1;
         this.compteur = this.compteur - 1;
       }
-      console.log(this.compteur);
     }
     if (this.compteur > 0) {
       console.log(
-        `Player removed ${reponse_matches} match(es) from line ${resultat_1[0]}`,
+        `Player removed ${this.res[0][1]} match(es) from line ${this.res[1][1]}`,
       );
       this.show();
     } else {
@@ -163,15 +166,34 @@ class Tableau {
     }
   }
 
-  launch_game() {
+  start_on_play(
+    type_user: string,
+    reponse_line: string | number,
+    response_matches: string | number,
+  ) {
+    let result: any;
+    result = [];
+    result = this.game(type_user, reponse_line, response_matches);
+    if (this.res !== []) {
+      if (result[0] !== 'not error' && result[1] === 'not error') {
+        while (this.res[0] !== 'not error' && this.res[1] !== 'not error') {
+          this.game('Player', 'null', 'null');
+        }
+      }
+      this.score();
+    }
+  }
+
+  start_final()
+  {
     this.start();
     const random = Math.floor(Math.random() * Math.floor(10));
     while (this.compteur > 0) {
-      this.game('Player', 'null', 'null');
-      //this.game('IA', random, random);
+      this.start_on_play('Player', 'null', 'null');
+      this.start_on_play('IA', random, random);
     }
   }
 }
 
 const greeter = new Tableau();
-greeter.launch_game();
+greeter.start_final();
