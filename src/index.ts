@@ -47,7 +47,7 @@ class Tableau {
   start() {
     this.initialise();
     this.show();
-    console.log("\r")
+    console.log('\r');
   }
 
   error_line(line: number) {
@@ -124,7 +124,8 @@ class Tableau {
     reponse_line: number | string,
     reponse_matches: number | string,
   ) {
-    console.log("\r")
+    this.res = [];
+    console.log('\r');
     console.log(`${type_user} turn :`);
     let resultat_1: [string, number] | number | any;
     let resultat_2: [string, number] | number | any;
@@ -132,17 +133,20 @@ class Tableau {
     resultat_1 = this.verify_error(type_user, 'line', [reponse_matches]);
     if (resultat_1[0] !== 'not error') {
       console.log(resultat_1[0]);
-      return [resultat_1];
+      return [resultat_1[0], resultat_1[1]];
     } else {
+      this.res = [resultat_1];
       resultat_2 = this.verify_error(type_user, 'matches', [
         resultat_1[1],
         reponse_matches,
       ]);
       if (resultat_2[0] !== 'not error') {
         console.log(resultat_2[0]);
+        return [resultat_1, resultat_2];
       } else {
         this.res = [resultat_1, resultat_2];
-        return [resultat_1, resultat_2];
+        this.score();
+        return ['not error', 'not error'];
       }
     }
   }
@@ -162,7 +166,7 @@ class Tableau {
       console.log(
         `Player removed ${this.res[0][1]} match(es) from line ${this.res[1][1]}`,
       );
-      console.log("\r")
+      console.log('\r');
       this.show();
     } else {
       console.log('You lost, too bad..');
@@ -176,14 +180,11 @@ class Tableau {
   ) {
     let result: any;
     result = [];
+    let games: any;
+    games = [[], []];
     result = this.game(type_user, reponse_line, response_matches);
-    if (this.res !== []) {
-      if (result[0] !== 'not error' && result[1] === 'not error') {
-        while (this.res[0] !== 'not error' && this.res[1] !== 'not error') {
-          this.game('Player', 'null', 'null');
-        }
-      }
-      this.score();
+    while (games[0] !== 'not error' && games[1] !== 'not error') {
+      games = this.game('Player', 'null', 'null');
     }
   }
 
